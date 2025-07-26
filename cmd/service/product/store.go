@@ -61,7 +61,7 @@ func (s *Store) CreateProduct(product *types.Product) error {
 	return nil
 }
 
-func GetProductsByIDs(productIDs []int, db *sql.DB) ([]types.Product, error) {
+func (s *Store) GetProductsByIDs(productIDs []int) ([]types.Product, error) {
 	placeholders := strings.Repeat("?,", len(productIDs)-1) + "?"
 	query := fmt.Sprintf(`SELECT * FROM products WHERE id IN (%s)`, placeholders)
 
@@ -70,7 +70,7 @@ func GetProductsByIDs(productIDs []int, db *sql.DB) ([]types.Product, error) {
 	for i, id := range productIDs {
 		args[i] = id
 	}
-	rows, err := db.Query(query, args...)
+	rows, err := s.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
