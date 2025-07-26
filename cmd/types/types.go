@@ -12,7 +12,7 @@ type ProductStore interface {
 	GetProducts() ([]Product, error)
 	GetProductsByIDs(ps []int) ([]Product, error)
 	CreateProduct(product *Product) error
-	UpdateProduct(Product) error
+	UpdateProduct(*Product) error
 }
 
 type OrderStore interface {

@@ -12,7 +12,7 @@ func getCartItemsIDs(items []types.CartItem) ([]int, error) {
 		if item.Quantity <= 0 {
 			return nil, fmt.Errorf("invalid quantity for item %d: %d", i, item.Quantity)
 		}
-		productIDs[i] = item.ProductID
+		productIDs = append(productIDs, item.ProductID)
 	}
 	return productIDs, nil
 }
@@ -36,7 +36,7 @@ func (h *Handler) createOrder(ps []types.Product, items []types.CartItem, userID
 		product := productMap[item.ProductID]
 		product.Quantity -= item.Quantity
 
-		h.productStore.UpdateProduct(product)
+		h.productStore.UpdateProduct(&product)
 	}
 
 	// create order
