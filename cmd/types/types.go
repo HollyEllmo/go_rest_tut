@@ -18,6 +18,9 @@ type ProductStore interface {
 type OrderStore interface {
 	CreateOrder(Order) (int, error)
 	CreateOrderItem(OrderItem) error
+	GetUserOrders(userID int, filters OrderFilters) ([]OrderWithItems, error)
+	GetOrderByID(orderID, userID int) (*OrderWithItems, error)
+	GetOrdersCount(userID int, filters OrderFilters) (int, error)
 }
 
 type Order struct {
@@ -35,6 +38,51 @@ type OrderItem struct {
 	ProductID int     `json:"productId"`
 	Quantity  int     `json:"quantity"`
 	Price     float64 `json:"price"`
+}
+
+// OrderItemWithProduct represents an order item with full product details
+type OrderItemWithProduct struct {
+	ID          int     `json:"id"`
+	OrderID     int     `json:"orderId"`
+	ProductID   int     `json:"productId"`
+	ProductName string  `json:"productName"`
+	ProductImage string `json:"productImage"`
+	Quantity    int     `json:"quantity"`
+	Price       float64 `json:"price"`
+}
+
+// OrderWithItems represents an order with all its items
+type OrderWithItems struct {
+	ID        int                     `json:"id"`
+	UserID    int                     `json:"userId"`
+	Total     float64                 `json:"total"`
+	Status    string                  `json:"status"`
+	Address   string                  `json:"address"`
+	CreatedAt time.Time               `json:"createdAt"`
+	Items     []OrderItemWithProduct  `json:"items"`
+}
+
+// OrderFilters represents filters for order queries
+type OrderFilters struct {
+	Status    *string    `json:"status,omitempty"`
+	FromDate  *time.Time `json:"fromDate,omitempty"`
+	ToDate    *time.Time `json:"toDate,omitempty"`
+	Limit     int        `json:"limit"`
+	Offset    int        `json:"offset"`
+}
+
+// OrderListResponse represents the response for order list
+type OrderListResponse struct {
+	Orders  []OrderWithItems `json:"orders"`
+	Total   int              `json:"total"`
+	HasMore bool             `json:"hasMore"`
+}
+
+// GetOrdersPayload represents query parameters for getting orders
+type GetOrdersPayload struct {
+	Status *string `json:"status,omitempty" validate:"omitempty,oneof=pending completed cancelled"`
+	Limit  *int    `json:"limit,omitempty" validate:"omitempty,min=1,max=100"`
+	Offset *int    `json:"offset,omitempty" validate:"omitempty,min=0"`
 }
 
 type Product struct {
