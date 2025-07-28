@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/HollyEllmo/go_rest_tut/cmd/service/address"
 	"github.com/HollyEllmo/go_rest_tut/cmd/service/cart"
 	"github.com/HollyEllmo/go_rest_tut/cmd/service/inventory"
 	"github.com/HollyEllmo/go_rest_tut/cmd/service/order"
@@ -39,8 +40,13 @@ func (s *APIServer) Run() error {
 
 	orderStore := order.NewStore(s.db)
 	inventoryStore := inventory.NewStore(s.db)
-	cartHandler := cart.NewHandler(orderStore, productStore, userStore, inventoryStore)
+	addressStore := address.NewStore(s.db)
+	
+	cartHandler := cart.NewHandler(orderStore, productStore, userStore, inventoryStore, addressStore)
 	cartHandler.RegisterRoutes(subrouter)
+
+	addressHandler := address.NewHandler(addressStore, userStore)
+	addressHandler.RegisterRoutes(subrouter)
 
 	inventoryHandler := inventory.NewHandler(inventoryStore, userStore)
 	inventoryHandler.RegisterRoutes(subrouter)

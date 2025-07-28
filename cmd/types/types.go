@@ -80,7 +80,8 @@ type CartItem struct {
 }
 
 type CartCheckoutPayload struct {
-	Items []CartItem `json:"items" validate:"required"`
+	Items     []CartItem `json:"items" validate:"required"`
+	AddressID *int       `json:"addressId,omitempty"` // Optional: use specific address, if nil use default
 }
 
 // Inventory Movement types
@@ -119,4 +120,65 @@ type InventoryStore interface {
 	ReleaseStock(productID, quantity int, reason string) error
 	AddStock(productID, quantity int, reason string, refType InventoryRefType, refID *int) error
 	GetStockHistory(productID int, limit int) ([]InventoryMovement, error)
+}
+
+// User Address types
+type UserAddress struct {
+	ID            int       `json:"id"`
+	UserID        int       `json:"userId"`
+	Title         string    `json:"title"`
+	FirstName     string    `json:"firstName"`
+	LastName      string    `json:"lastName"`
+	Company       *string   `json:"company,omitempty"`
+	AddressLine1  string    `json:"addressLine1"`
+	AddressLine2  *string   `json:"addressLine2,omitempty"`
+	City          string    `json:"city"`
+	StateProvince string    `json:"stateProvince"`
+	PostalCode    string    `json:"postalCode"`
+	Country       string    `json:"country"`
+	Phone         *string   `json:"phone,omitempty"`
+	IsDefault     bool      `json:"isDefault"`
+	CreatedAt     time.Time `json:"createdAt"`
+	UpdatedAt     time.Time `json:"updatedAt"`
+}
+
+type CreateAddressPayload struct {
+	Title         string  `json:"title" validate:"required,max=100"`
+	FirstName     string  `json:"firstName" validate:"required,max=100"`
+	LastName      string  `json:"lastName" validate:"required,max=100"`
+	Company       *string `json:"company,omitempty" validate:"omitempty,max=100"`
+	AddressLine1  string  `json:"addressLine1" validate:"required,max=255"`
+	AddressLine2  *string `json:"addressLine2,omitempty" validate:"omitempty,max=255"`
+	City          string  `json:"city" validate:"required,max=100"`
+	StateProvince string  `json:"stateProvince" validate:"required,max=100"`
+	PostalCode    string  `json:"postalCode" validate:"required,max=20"`
+	Country       string  `json:"country" validate:"required,max=100"`
+	Phone         *string `json:"phone,omitempty" validate:"omitempty,max=20"`
+	IsDefault     bool    `json:"isDefault"`
+}
+
+type UpdateAddressPayload struct {
+	Title         *string `json:"title,omitempty" validate:"omitempty,max=100"`
+	FirstName     *string `json:"firstName,omitempty" validate:"omitempty,max=100"`
+	LastName      *string `json:"lastName,omitempty" validate:"omitempty,max=100"`
+	Company       *string `json:"company,omitempty" validate:"omitempty,max=100"`
+	AddressLine1  *string `json:"addressLine1,omitempty" validate:"omitempty,max=255"`
+	AddressLine2  *string `json:"addressLine2,omitempty" validate:"omitempty,max=255"`
+	City          *string `json:"city,omitempty" validate:"omitempty,max=100"`
+	StateProvince *string `json:"stateProvince,omitempty" validate:"omitempty,max=100"`
+	PostalCode    *string `json:"postalCode,omitempty" validate:"omitempty,max=20"`
+	Country       *string `json:"country,omitempty" validate:"omitempty,max=100"`
+	Phone         *string `json:"phone,omitempty" validate:"omitempty,max=20"`
+	IsDefault     *bool   `json:"isDefault,omitempty"`
+}
+
+// Address Store interface
+type AddressStore interface {
+	GetUserAddresses(userID int) ([]UserAddress, error)
+	GetAddressByID(addressID, userID int) (*UserAddress, error)
+	CreateAddress(userID int, payload CreateAddressPayload) (*UserAddress, error)
+	UpdateAddress(addressID, userID int, payload UpdateAddressPayload) (*UserAddress, error)
+	DeleteAddress(addressID, userID int) error
+	GetDefaultAddress(userID int) (*UserAddress, error)
+	SetDefaultAddress(addressID, userID int) error
 }

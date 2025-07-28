@@ -15,10 +15,11 @@ type Handler struct {
 	productStore   types.ProductStore
 	userStore      types.UserStore
 	inventoryStore types.InventoryStore
+	addressStore   types.AddressStore
 }
 
-func NewHandler(store types.OrderStore, productStore types.ProductStore, userStore types.UserStore, inventoryStore types.InventoryStore) *Handler {
-	return &Handler{store: store, productStore: productStore, userStore: userStore, inventoryStore: inventoryStore}
+func NewHandler(store types.OrderStore, productStore types.ProductStore, userStore types.UserStore, inventoryStore types.InventoryStore, addressStore types.AddressStore) *Handler {
+	return &Handler{store: store, productStore: productStore, userStore: userStore, inventoryStore: inventoryStore, addressStore: addressStore}
 }
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
@@ -53,7 +54,7 @@ func (h *Handler) handleCheckout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orderID, totalPrice, err := h.createOrder(ps, cart.Items, userID)
+	orderID, totalPrice, err := h.createOrder(ps, cart.Items, userID, cart.AddressID)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return

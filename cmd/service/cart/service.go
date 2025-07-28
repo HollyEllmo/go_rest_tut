@@ -17,7 +17,7 @@ func getCartItemsIDs(items []types.CartItem) ([]int, error) {
 	return productIDs, nil
 }
 
-func (h *Handler) createOrder(ps []types.Product, items []types.CartItem, userID int) (int, float64, error) {
+func (h *Handler) createOrder(ps []types.Product, items []types.CartItem, userID int, addressID *int) (int, float64, error) {
 	productMap := make(map[int]types.Product)
 	for _, product := range ps {
 		productMap[product.ID] = product
@@ -31,12 +31,18 @@ func (h *Handler) createOrder(ps []types.Product, items []types.CartItem, userID
 	// calculate the total price
 	totalPrice := calculateTotalPrice(items, productMap)
 
+	// get the address to use for this order
+	addressString, err := h.getOrderAddress(userID, addressID)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to get order address: %w", err)
+	}
+
 	// create order first
 	orderID, err := h.store.CreateOrder(types.Order{
 		UserID:  userID,
 		Total:   totalPrice,
 		Status:  "pending",
-		Address: "default address", // This should be replaced with actual address handling
+		Address: addressString,
 	})
 
 	if err != nil {
@@ -106,4 +112,52 @@ func calculateTotalPrice(cartItems []types.CartItem, products map[int]types.Prod
 		total += product.Price * float64(item.Quantity)
 	}
 	return total
+}
+
+// getOrderAddress gets the address string to use for the order
+func (h *Handler) getOrderAddress(userID int, addressID *int) (string, error) {
+	var address *types.UserAddress
+	var err error
+
+	if addressID != nil {
+		// Use specific address
+		address, err = h.addressStore.GetAddressByID(*addressID, userID)
+		if err != nil {
+			return "", fmt.Errorf("failed to get specified address: %w", err)
+		}
+	} else {
+		// Use default address
+		address, err = h.addressStore.GetDefaultAddress(userID)
+		if err != nil {
+			return "", fmt.Errorf("failed to get default address: %w", err)
+		}
+	}
+
+	// Format address as a string
+	addressString := formatAddressForOrder(address)
+	return addressString, nil
+}
+
+// formatAddressForOrder formats a UserAddress into a string for order storage
+func formatAddressForOrder(addr *types.UserAddress) string {
+	addressString := fmt.Sprintf("%s %s", addr.FirstName, addr.LastName)
+	
+	if addr.Company != nil && *addr.Company != "" {
+		addressString += fmt.Sprintf("\n%s", *addr.Company)
+	}
+	
+	addressString += fmt.Sprintf("\n%s", addr.AddressLine1)
+	
+	if addr.AddressLine2 != nil && *addr.AddressLine2 != "" {
+		addressString += fmt.Sprintf("\n%s", *addr.AddressLine2)
+	}
+	
+	addressString += fmt.Sprintf("\n%s, %s %s", addr.City, addr.StateProvince, addr.PostalCode)
+	addressString += fmt.Sprintf("\n%s", addr.Country)
+	
+	if addr.Phone != nil && *addr.Phone != "" {
+		addressString += fmt.Sprintf("\nPhone: %s", *addr.Phone)
+	}
+	
+	return addressString
 }
