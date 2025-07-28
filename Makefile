@@ -1,4 +1,4 @@
-.PHONY: build test run clean backup restore restore-testdata
+.PHONY: build test run clean backup restore restore-testdata test-setup test-concurrent test-race
 
 build:
 	@mkdir -p bin
@@ -31,3 +31,13 @@ restore:
 
 restore-testdata:
 	@./scripts/restore_testdata.sh
+
+# Testing commands
+test-setup:
+	@./scripts/setup_test_db.sh
+
+test-concurrent:
+	@go test ./cmd/service/inventory -v
+
+test-race:
+	@go test ./cmd/service/inventory -v -race
