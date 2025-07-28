@@ -1,4 +1,4 @@
-.PHONY: build test run clean
+.PHONY: build test run clean backup restore restore-testdata
 
 build:
 	@mkdir -p bin
@@ -21,3 +21,13 @@ migrate-up:
 
 migrate-down:
 	@go run cmd/migrate/main.go down
+
+# Database backup and restore commands
+backup:
+	@./scripts/backup_db.sh $(filter-out $@,$(MAKECMDGOALS))
+
+restore:
+	@./scripts/restore_testdata.sh $(filter-out $@,$(MAKECMDGOALS))
+
+restore-testdata:
+	@./scripts/restore_testdata.sh
