@@ -4,7 +4,7 @@ CREATE TABLE inventory_movements (
   `movement_type` ENUM('IN', 'OUT') NOT NULL,
   `quantity` INT UNSIGNED NOT NULL,
   `reason` VARCHAR(100) NOT NULL,
-  `reference_id` INT UNSIGNED NULL, -- 4;O A2O78 A 70:07></?>?>;=5=85<
+  `reference_id` INT UNSIGNED NULL, -- for linking to orders/restocks
   `reference_type` ENUM('ORDER', 'RESTOCK', 'ADJUSTMENT', 'RETURN') NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
