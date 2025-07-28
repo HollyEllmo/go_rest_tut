@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/HollyEllmo/go_rest_tut/cmd/config"
@@ -56,6 +57,11 @@ func WithJWTAuth(handlerFunc http.HandlerFunc, store types.UserStore) http.Handl
 		str := claims["userID"].(string)
 
 		userID, err := strconv.Atoi(str)
+		if err != nil {
+			log.Println("Error converting userID to int:", err)
+			permissionDenied(w)
+			return
+		}
 
 		u, err := store.GetUserByID(userID)
 		if err != nil {
@@ -77,7 +83,11 @@ func getTokenFromRequest(r *http.Request) string {
 	tokenAuth := r.Header.Get("Authorization")
 
 	if tokenAuth != "" {
-		return tokenAuth
+		// Проверяем, что заголовок начинается с "Bearer "
+		if strings.HasPrefix(tokenAuth, "Bearer ") {
+			// Возвращаем токен без префикса "Bearer "
+			return strings.TrimPrefix(tokenAuth, "Bearer ")
+		}
 	}
 
 	return ""
