@@ -66,7 +66,7 @@ func (s *Store) GetProductsByIDs(productIDs []int) ([]types.Product, error) {
 	query := fmt.Sprintf(`SELECT * FROM products WHERE id IN (%s)`, placeholders)
 
 	// Convert Product IDs to interface slice
-	args := make([]interface{}, len(productIDs))
+	args := make([]any, len(productIDs))
 	for i, id := range productIDs {
 		args[i] = id
 	}

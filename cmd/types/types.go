@@ -43,7 +43,6 @@ type Product struct {
 	Description string    `json:"description"`
 	Image       string    `json:"image"`
 	Price       float64   `json:"price"`
-	Quantity    int       `json:"quantity"`
 	CreatedAt   time.Time `json:"createdAt"`
 }
 
@@ -52,7 +51,6 @@ type CreateProductPayload struct {
 	Description string  `json:"description" validate:"required"`
 	Image       string  `json:"image" validate:"required"`
 	Price       float64 `json:"price" validate:"required,gt=0"`
-	Quantity    int     `json:"quantity" validate:"required,gte=0"`
 }
 
 type User struct {
@@ -83,4 +81,42 @@ type CartItem struct {
 
 type CartCheckoutPayload struct {
 	Items []CartItem `json:"items" validate:"required"`
+}
+
+// Inventory Movement types
+type InventoryMovement struct {
+	ID            int                   `json:"id"`
+	ProductID     int                   `json:"productId"`
+	MovementType  InventoryMovementType `json:"movementType"`
+	Quantity      int                   `json:"quantity"`
+	Reason        string                `json:"reason"`
+	ReferenceID   *int                  `json:"referenceId,omitempty"`
+	ReferenceType *InventoryRefType     `json:"referenceType,omitempty"`
+	CreatedAt     time.Time             `json:"createdAt"`
+}
+
+type InventoryMovementType string
+
+const (
+	MovementTypeIn  InventoryMovementType = "IN"
+	MovementTypeOut InventoryMovementType = "OUT"
+)
+
+type InventoryRefType string
+
+const (
+	RefTypeOrder      InventoryRefType = "ORDER"
+	RefTypeRestock    InventoryRefType = "RESTOCK"
+	RefTypeAdjustment InventoryRefType = "ADJUSTMENT"
+	RefTypeReturn     InventoryRefType = "RETURN"
+)
+
+// Inventory Store interface
+type InventoryStore interface {
+	GetCurrentStock(productID int) (int, error)
+	GetProductsWithStock(productIDs []int) (map[int]int, error)
+	ReserveStock(productID, quantity int, orderID int) error
+	ReleaseStock(productID, quantity int, reason string) error
+	AddStock(productID, quantity int, reason string, refType InventoryRefType, refID *int) error
+	GetStockHistory(productID int, limit int) ([]InventoryMovement, error)
 }

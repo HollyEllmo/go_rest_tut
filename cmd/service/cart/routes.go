@@ -11,13 +11,14 @@ import (
 )
 
 type Handler struct {
-	store        types.OrderStore
-	productStore types.ProductStore
-	userStore    types.UserStore
+	store          types.OrderStore
+	productStore   types.ProductStore
+	userStore      types.UserStore
+	inventoryStore types.InventoryStore
 }
 
-func NewHandler(store types.OrderStore, productStore types.ProductStore, userStore types.UserStore) *Handler {
-	return &Handler{store: store, productStore: productStore, userStore: userStore}
+func NewHandler(store types.OrderStore, productStore types.ProductStore, userStore types.UserStore, inventoryStore types.InventoryStore) *Handler {
+	return &Handler{store: store, productStore: productStore, userStore: userStore, inventoryStore: inventoryStore}
 }
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
