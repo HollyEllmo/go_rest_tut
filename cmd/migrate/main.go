@@ -57,4 +57,38 @@ func main() {
 			log.Println("Migrations reverted successfully")
 		}
 	}
+
+	if cmd == "force" {
+		if len(os.Args) < 3 {
+			log.Fatal("Usage: go run cmd/migrate/main.go force <version>")
+		}
+		version := os.Args[len(os.Args)-2]
+		var v int
+		if version == "none" {
+			v = -1
+		} else {
+			// Simple conversion for version number
+			switch version {
+			case "20250725200923":
+				v = 20250725200923
+			case "20250725201722":
+				v = 20250725201722
+			case "20250725201739":
+				v = 20250725201739
+			case "20250725201812":
+				v = 20250725201812
+			case "20250726103947":
+				v = 20250726103947
+			case "20250726103948":
+				v = 20250726103948
+			default:
+				log.Fatal("Unknown version:", version)
+			}
+		}
+		if err := m.Force(v); err != nil {
+			log.Fatal("Failed to force version:", err)
+		} else {
+			log.Printf("Forced database version to %d", v)
+		}
+	}
 }

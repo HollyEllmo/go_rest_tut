@@ -12,12 +12,15 @@ type ProductStore interface {
 	GetProducts() ([]Product, error)
 	GetProductsByIDs(ps []int) ([]Product, error)
 	CreateProduct(product *Product) error
-	UpdateProduct(Product) error
+	UpdateProduct(*Product) error
 }
 
 type OrderStore interface {
 	CreateOrder(Order) (int, error)
 	CreateOrderItem(OrderItem) error
+	GetUserOrders(userID int, filters OrderFilters) ([]OrderWithItems, error)
+	GetOrderByID(orderID, userID int) (*OrderWithItems, error)
+	GetOrdersCount(userID int, filters OrderFilters) (int, error)
 }
 
 type Order struct {
@@ -37,13 +40,57 @@ type OrderItem struct {
 	Price     float64 `json:"price"`
 }
 
+// OrderItemWithProduct represents an order item with full product details
+type OrderItemWithProduct struct {
+	ID          int     `json:"id"`
+	OrderID     int     `json:"orderId"`
+	ProductID   int     `json:"productId"`
+	ProductName string  `json:"productName"`
+	ProductImage string `json:"productImage"`
+	Quantity    int     `json:"quantity"`
+	Price       float64 `json:"price"`
+}
+
+// OrderWithItems represents an order with all its items
+type OrderWithItems struct {
+	ID        int                     `json:"id"`
+	UserID    int                     `json:"userId"`
+	Total     float64                 `json:"total"`
+	Status    string                  `json:"status"`
+	Address   string                  `json:"address"`
+	CreatedAt time.Time               `json:"createdAt"`
+	Items     []OrderItemWithProduct  `json:"items"`
+}
+
+// OrderFilters represents filters for order queries
+type OrderFilters struct {
+	Status    *string    `json:"status,omitempty"`
+	FromDate  *time.Time `json:"fromDate,omitempty"`
+	ToDate    *time.Time `json:"toDate,omitempty"`
+	Limit     int        `json:"limit"`
+	Offset    int        `json:"offset"`
+}
+
+// OrderListResponse represents the response for order list
+type OrderListResponse struct {
+	Orders  []OrderWithItems `json:"orders"`
+	Total   int              `json:"total"`
+	HasMore bool             `json:"hasMore"`
+}
+
+// GetOrdersPayload represents query parameters for getting orders
+type GetOrdersPayload struct {
+	Status *string `json:"status,omitempty" validate:"omitempty,oneof=pending completed cancelled"`
+	Limit  *int    `json:"limit,omitempty" validate:"omitempty,min=1,max=100"`
+	Offset *int    `json:"offset,omitempty" validate:"omitempty,min=0"`
+}
+
 type Product struct {
 	ID          int       `json:"id"`
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
 	Image       string    `json:"image"`
 	Price       float64   `json:"price"`
-	Quantity    int       `json:"quantity"`
 	CreatedAt   time.Time `json:"createdAt"`
 }
 
@@ -52,7 +99,6 @@ type CreateProductPayload struct {
 	Description string  `json:"description" validate:"required"`
 	Image       string  `json:"image" validate:"required"`
 	Price       float64 `json:"price" validate:"required,gt=0"`
-	Quantity    int     `json:"quantity" validate:"required,gte=0"`
 }
 
 type User struct {
@@ -82,5 +128,105 @@ type CartItem struct {
 }
 
 type CartCheckoutPayload struct {
-	Items []CartItem `json:"items" validate:"required"`
+	Items     []CartItem `json:"items" validate:"required"`
+	AddressID *int       `json:"addressId,omitempty"` // Optional: use specific address, if nil use default
+}
+
+// Inventory Movement types
+type InventoryMovement struct {
+	ID            int                   `json:"id"`
+	ProductID     int                   `json:"productId"`
+	MovementType  InventoryMovementType `json:"movementType"`
+	Quantity      int                   `json:"quantity"`
+	Reason        string                `json:"reason"`
+	ReferenceID   *int                  `json:"referenceId,omitempty"`
+	ReferenceType *InventoryRefType     `json:"referenceType,omitempty"`
+	CreatedAt     time.Time             `json:"createdAt"`
+}
+
+type InventoryMovementType string
+
+const (
+	MovementTypeIn  InventoryMovementType = "IN"
+	MovementTypeOut InventoryMovementType = "OUT"
+)
+
+type InventoryRefType string
+
+const (
+	RefTypeOrder      InventoryRefType = "ORDER"
+	RefTypeRestock    InventoryRefType = "RESTOCK"
+	RefTypeAdjustment InventoryRefType = "ADJUSTMENT"
+	RefTypeReturn     InventoryRefType = "RETURN"
+)
+
+// Inventory Store interface
+type InventoryStore interface {
+	GetCurrentStock(productID int) (int, error)
+	GetProductsWithStock(productIDs []int) (map[int]int, error)
+	ReserveStock(productID, quantity int, orderID int) error
+	ReleaseStock(productID, quantity int, reason string) error
+	AddStock(productID, quantity int, reason string, refType InventoryRefType, refID *int) error
+	GetStockHistory(productID int, limit int) ([]InventoryMovement, error)
+}
+
+// User Address types
+type UserAddress struct {
+	ID            int       `json:"id"`
+	UserID        int       `json:"userId"`
+	Title         string    `json:"title"`
+	FirstName     string    `json:"firstName"`
+	LastName      string    `json:"lastName"`
+	Company       *string   `json:"company,omitempty"`
+	AddressLine1  string    `json:"addressLine1"`
+	AddressLine2  *string   `json:"addressLine2,omitempty"`
+	City          string    `json:"city"`
+	StateProvince string    `json:"stateProvince"`
+	PostalCode    string    `json:"postalCode"`
+	Country       string    `json:"country"`
+	Phone         *string   `json:"phone,omitempty"`
+	IsDefault     bool      `json:"isDefault"`
+	CreatedAt     time.Time `json:"createdAt"`
+	UpdatedAt     time.Time `json:"updatedAt"`
+}
+
+type CreateAddressPayload struct {
+	Title         string  `json:"title" validate:"required,max=100"`
+	FirstName     string  `json:"firstName" validate:"required,max=100"`
+	LastName      string  `json:"lastName" validate:"required,max=100"`
+	Company       *string `json:"company,omitempty" validate:"omitempty,max=100"`
+	AddressLine1  string  `json:"addressLine1" validate:"required,max=255"`
+	AddressLine2  *string `json:"addressLine2,omitempty" validate:"omitempty,max=255"`
+	City          string  `json:"city" validate:"required,max=100"`
+	StateProvince string  `json:"stateProvince" validate:"required,max=100"`
+	PostalCode    string  `json:"postalCode" validate:"required,max=20"`
+	Country       string  `json:"country" validate:"required,max=100"`
+	Phone         *string `json:"phone,omitempty" validate:"omitempty,max=20"`
+	IsDefault     bool    `json:"isDefault"`
+}
+
+type UpdateAddressPayload struct {
+	Title         *string `json:"title,omitempty" validate:"omitempty,max=100"`
+	FirstName     *string `json:"firstName,omitempty" validate:"omitempty,max=100"`
+	LastName      *string `json:"lastName,omitempty" validate:"omitempty,max=100"`
+	Company       *string `json:"company,omitempty" validate:"omitempty,max=100"`
+	AddressLine1  *string `json:"addressLine1,omitempty" validate:"omitempty,max=255"`
+	AddressLine2  *string `json:"addressLine2,omitempty" validate:"omitempty,max=255"`
+	City          *string `json:"city,omitempty" validate:"omitempty,max=100"`
+	StateProvince *string `json:"stateProvince,omitempty" validate:"omitempty,max=100"`
+	PostalCode    *string `json:"postalCode,omitempty" validate:"omitempty,max=20"`
+	Country       *string `json:"country,omitempty" validate:"omitempty,max=100"`
+	Phone         *string `json:"phone,omitempty" validate:"omitempty,max=20"`
+	IsDefault     *bool   `json:"isDefault,omitempty"`
+}
+
+// Address Store interface
+type AddressStore interface {
+	GetUserAddresses(userID int) ([]UserAddress, error)
+	GetAddressByID(addressID, userID int) (*UserAddress, error)
+	CreateAddress(userID int, payload CreateAddressPayload) (*UserAddress, error)
+	UpdateAddress(addressID, userID int, payload UpdateAddressPayload) (*UserAddress, error)
+	DeleteAddress(addressID, userID int) error
+	GetDefaultAddress(userID int) (*UserAddress, error)
+	SetDefaultAddress(addressID, userID int) error
 }

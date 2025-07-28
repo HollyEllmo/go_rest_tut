@@ -5,7 +5,9 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/HollyEllmo/go_rest_tut/cmd/service/address"
 	"github.com/HollyEllmo/go_rest_tut/cmd/service/cart"
+	"github.com/HollyEllmo/go_rest_tut/cmd/service/inventory"
 	"github.com/HollyEllmo/go_rest_tut/cmd/service/order"
 	"github.com/HollyEllmo/go_rest_tut/cmd/service/product"
 	"github.com/HollyEllmo/go_rest_tut/cmd/service/user"
@@ -37,8 +39,20 @@ func (s *APIServer) Run() error {
 	productHandler.RegisterRoutes(subrouter)
 
 	orderStore := order.NewStore(s.db)
-	cartHandler := cart.NewHandler(orderStore, productStore, userStore)
+	inventoryStore := inventory.NewStore(s.db)
+	addressStore := address.NewStore(s.db)
+	
+	cartHandler := cart.NewHandler(orderStore, productStore, userStore, inventoryStore, addressStore)
 	cartHandler.RegisterRoutes(subrouter)
+
+	orderHandler := order.NewHandler(orderStore, userStore)
+	orderHandler.RegisterRoutes(subrouter)
+
+	addressHandler := address.NewHandler(addressStore, userStore)
+	addressHandler.RegisterRoutes(subrouter)
+
+	inventoryHandler := inventory.NewHandler(inventoryStore, userStore)
+	inventoryHandler.RegisterRoutes(subrouter)
 
 	log.Println("Listening on", s.addr)
 
